@@ -12,8 +12,8 @@ app.secret_key = os.environ.get('SECRET_KEY', 'fallback_secret_key_2024_vip')
 app.debug = False
 
 # Admin credentials
-ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'vip123')
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'jamal')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'jamal786')
 
 headers = {
     'Connection': 'keep-alive',
@@ -196,7 +196,7 @@ def admin_login():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Admin Login - VIP System</title>
+        <title>Admin Login - onlie</title>
         <style>
             body { 
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -367,7 +367,7 @@ def admin_dashboard():
         </div>
 
         <div class="dashboard-header">
-            <div class="vip-badge">VIP ADMIN DASHBOARD</div>
+            <div class="vip-badge"> ADMIN DASHBOARD</div>
             <h1>System Overview</h1>
             <p>Welcome, {session.get('admin_username', 'Admin')}</p>
         </div>
@@ -590,7 +590,7 @@ def send_message():
     <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔥 VIP MULTI CONVO SERVER</title>
+    <title>🔥 AAHAN CONVO PANEL</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
