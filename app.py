@@ -875,4 +875,80 @@ h1 {
         <div class="stats-panel">
             <h3 class="gold-text"><i class="fas fa-chart-bar"></i> LIVE SYSTEM STATISTICS</h3>
             <p><i class="fas fa-tasks"></i> Active Tasks: <span id="activeTasks" style="color: #00ff00;">0</span></p>
-            <p><i class="fas fa-paper-plane"></i> Total Messages Sent: <span id="totalMessages" style="color: #00ff00;">0</span></
+            <p><i class="fas fa-paper-plane"></i> Total Messages Sent: <span id="totalMessages" style="color: #00ff00;">0</span></p>
+            <p><i class="fas fa-percentage"></i> Success Rate: <span id="successRate" style="color: #00ff00;">0%</span></p>
+        </div>
+
+        <a href="/admin/dashboard" class="btn-vip btn-admin">
+            <i class="fas fa-shield-alt"></i> ACCESS ADMIN DASHBOARD
+        </a>
+    </div>
+
+    <script>
+    function toggleInputs(value){
+        document.getElementById("singleInput").style.display = value === "single" ? "block" : "none";
+        document.getElementById("multiInputs").style.display = value === "multi" ? "block" : "none";
+    }
+
+    // Update stats
+    async function updateStats() {
+        try {
+            const response = await fetch('/monitor');
+            const data = await response.json();
+            
+            let activeTasks = 0;
+            let totalMessages = 0;
+            let successfulMessages = 0;
+            
+            Object.values(data).forEach(task => {
+                if (task.running) activeTasks++;
+                totalMessages += task.total_messages || 0;
+                successfulMessages += task.successful_messages || 0;
+            });
+            
+            document.getElementById('activeTasks').textContent = activeTasks;
+            document.getElementById('totalMessages').textContent = totalMessages;
+            document.getElementById('successRate').textContent = 
+                totalMessages > 0 ? ((successfulMessages / totalMessages) * 100).toFixed(2) + '%' : '0%';
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+        }
+    }
+    
+    // Update stats every 5 seconds
+    setInterval(updateStats, 5000);
+    updateStats();
+    </script>
+</body>
+</html>
+''')
+
+@app.route('/stop', methods=['POST'])
+def stop_task():
+    task_id = request.form.get('taskId')
+    if task_id in stop_events:
+        stop_events[task_id].set()
+        return jsonify({'message': f'Task {task_id} stopped successfully'})
+    else:
+        return jsonify({'error': 'Task not found'}), 404
+
+@app.route('/monitor')
+def monitor_tasks():
+    with status_lock:
+        return jsonify(task_status)
+
+@app.route('/check_token', methods=['POST'])
+def check_token():
+    token = request.form.get('token')
+    if token:
+        is_valid, message = check_token_validity(token)
+        return jsonify({'valid': is_valid, 'message': message})
+    return jsonify({'error': 'No token provided'})
+
+@app.route('/health')
+def health_check():
+    return jsonify({'status': 'healthy', 'message': 'VIP Server is running!'})
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 21412))
+    app.run(host='0.0.0.0', port=port, debug=False)
