@@ -9,9 +9,9 @@ import os
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'fallback_secret_key_2024_vip')
-app.debug = False  # Production में False रखें
+app.debug = False
 
-# Admin credentials - Environment variables में store करें
+# Admin credentials
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'vip123')
 
@@ -185,86 +185,84 @@ def admin_login():
             session['admin_username'] = username
             return redirect(url_for('admin_dashboard'))
         else:
-            return render_template_string('''
-            <div style="background: #ff6b6b; color: white; padding: 20px; text-align: center;">
-                <h2>Invalid Credentials</h2>
-                <a href="/admin/login">Try Again</a>
+            return '''
+            <div style="background: #ff6b6b; color: white; padding: 20px; text-align: center; font-family: Arial;">
+                <h2>❌ Invalid Credentials</h2>
+                <a href="/admin/login" style="color: white;">Try Again</a>
             </div>
-            ''')
+            '''
     
-    return render_template_string('''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Admin Login - VIP System</title>
-    <style>
-        body { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .login-container {
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-            width: 350px;
-            text-align: center;
-        }
-        .vip-badge {
-            background: linear-gradient(135deg, #ffd700, #ffa500);
-            color: black;
-            padding: 10px;
-            border-radius: 20px;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 10px;
-        }
-        button:hover {
-            background: #764ba2;
-        }
-    </style>
-</head>
-<body>
-    <div class="login-container">
-        <div class="vip-badge">
-            <i class="fas fa-crown"></i> VIP ADMIN PANEL
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Admin Login - VIP System</title>
+        <style>
+            body { 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                font-family: Arial, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+            }
+            .login-container {
+                background: white;
+                padding: 40px;
+                border-radius: 15px;
+                box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+                width: 350px;
+                text-align: center;
+            }
+            .vip-badge {
+                background: linear-gradient(135deg, #ffd700, #ffa500);
+                color: black;
+                padding: 10px;
+                border-radius: 20px;
+                font-weight: bold;
+                margin-bottom: 20px;
+            }
+            input {
+                width: 100%;
+                padding: 12px;
+                margin: 10px 0;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                font-size: 16px;
+            }
+            button {
+                width: 100%;
+                padding: 12px;
+                background: #667eea;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 16px;
+                margin-top: 10px;
+            }
+            button:hover {
+                background: #764ba2;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="login-container">
+            <div class="vip-badge">VIP ADMIN PANEL</div>
+            <h2>Admin Login</h2>
+            <form method="POST">
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+            <p style="margin-top: 15px;">
+                <a href="/">← Back to Main App</a>
+            </p>
         </div>
-        <h2>Admin Login</h2>
-        <form method="POST">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-        </form>
-        <p style="margin-top: 15px;">
-            <a href="/">← Back to Main App</a>
-        </p>
-    </div>
-</body>
-</html>
-''')
+    </body>
+    </html>
+    '''
 
 @app.route('/admin/dashboard')
 @admin_required
@@ -278,160 +276,157 @@ def admin_dashboard():
         successful_messages = sum(task.get('successful_messages', 0) for task in task_status.values())
         failed_messages = sum(task.get('failed_messages', 0) for task in task_status.values())
     
-    return render_template_string('''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Admin Dashboard - VIP System</title>
-    <style>
-        body { 
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            color: white;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-        }
-        .dashboard-header {
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
-        }
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        .stat-card {
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,215,0,0.3);
-        }
-        .task-list {
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 10px;
-            backdrop-filter: blur(10px);
-        }
-        .task-item {
-            background: rgba(255,255,255,0.05);
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border-left: 4px solid #ffd700;
-        }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px;
-            font-weight: bold;
-        }
-        .btn-danger { background: #ff4757; color: white; }
-        .btn-primary { background: #3742fa; color: white; }
-        .nav { 
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .nav a { 
-            color: white; 
-            text-decoration: none; 
-            padding: 10px 20px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 5px;
-            border: 1px solid #ffd700;
-        }
-        .vip-badge {
-            background: linear-gradient(135deg, #ffd700, #ffa500);
-            color: black;
-            padding: 5px 15px;
-            border-radius: 15px;
-            font-weight: bold;
-            display: inline-block;
-            margin-bottom: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="nav">
-        <a href="/">🏠 Main App</a>
-        <a href="/admin/dashboard">📊 Dashboard</a>
-        <a href="/admin/tokens">🔑 Tokens</a>
-        <a href="/admin/logout">🚪 Logout</a>
-    </div>
+    return f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Admin Dashboard - VIP System</title>
+        <style>
+            body {{ 
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+                color: white;
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+            }}
+            .dashboard-header {{
+                background: rgba(255,255,255,0.1);
+                padding: 20px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                backdrop-filter: blur(10px);
+            }}
+            .stats-container {{
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin-bottom: 20px;
+            }}
+            .stat-card {{
+                background: rgba(255,255,255,0.1);
+                padding: 20px;
+                border-radius: 10px;
+                text-align: center;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,215,0,0.3);
+            }}
+            .task-list {{
+                background: rgba(255,255,255,0.1);
+                padding: 20px;
+                border-radius: 10px;
+                backdrop-filter: blur(10px);
+            }}
+            .task-item {{
+                background: rgba(255,255,255,0.05);
+                padding: 15px;
+                margin: 10px 0;
+                border-radius: 5px;
+                border-left: 4px solid #ffd700;
+            }}
+            .btn {{
+                padding: 10px 20px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                margin: 5px;
+                font-weight: bold;
+            }}
+            .btn-danger {{ background: #ff4757; color: white; }}
+            .btn-primary {{ background: #3742fa; color: white; }}
+            .nav {{ 
+                margin-bottom: 20px;
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+            }}
+            .nav a {{ 
+                color: white; 
+                text-decoration: none; 
+                padding: 10px 20px;
+                background: rgba(255,255,255,0.1);
+                border-radius: 5px;
+                border: 1px solid #ffd700;
+            }}
+            .vip-badge {{
+                background: linear-gradient(135deg, #ffd700, #ffa500);
+                color: black;
+                padding: 5px 15px;
+                border-radius: 15px;
+                font-weight: bold;
+                display: inline-block;
+                margin-bottom: 10px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="nav">
+            <a href="/">🏠 Main App</a>
+            <a href="/admin/dashboard">📊 Dashboard</a>
+            <a href="/admin/tokens">🔑 Tokens</a>
+            <a href="/admin/logout">🚪 Logout</a>
+        </div>
 
-    <div class="dashboard-header">
-        <div class="vip-badge">VIP ADMIN DASHBOARD</div>
-        <h1>System Overview</h1>
-        <p>Welcome, {{ session.admin_username }}</p>
-    </div>
+        <div class="dashboard-header">
+            <div class="vip-badge">VIP ADMIN DASHBOARD</div>
+            <h1>System Overview</h1>
+            <p>Welcome, {session.get('admin_username', 'Admin')}</p>
+        </div>
 
-    <div class="stats-container">
-        <div class="stat-card">
-            <h3>🔄 Active Tasks</h3>
-            <h2>{{ active_tasks|length }}</h2>
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3>🔄 Active Tasks</h3>
+                <h2>{len(active_tasks)}</h2>
+            </div>
+            <div class="stat-card">
+                <h3>📋 Total Tasks</h3>
+                <h2>{total_tasks}</h2>
+            </div>
+            <div class="stat-card">
+                <h3>👥 Total Users</h3>
+                <h2>{total_users}</h2>
+            </div>
+            <div class="stat-card">
+                <h3>📨 Total Messages</h3>
+                <h2>{total_messages}</h2>
+            </div>
+            <div class="stat-card">
+                <h3>✅ Success Rate</h3>
+                <h2>{(successful_messages/total_messages*100 if total_messages > 0 else 0):.2f}%</h2>
+            </div>
         </div>
-        <div class="stat-card">
-            <h3>📋 Total Tasks</h3>
-            <h2>{{ total_tasks }}</h2>
-        </div>
-        <div class="stat-card">
-            <h3>👥 Total Users</h3>
-            <h2>{{ total_users }}</h2>
-        </div>
-        <div class="stat-card">
-            <h3>📨 Total Messages</h3>
-            <h2>{{ total_messages }}</h2>
-        </div>
-        <div class="stat-card">
-            <h3>✅ Success Rate</h3>
-            <h2>{{ (successful_messages/total_messages*100 if total_messages > 0 else 0)|round(2) }}%</h2>
-        </div>
-    </div>
 
-    <div class="task-list">
-        <h2>🎯 Active Tasks</h2>
-        {% for task_id, task in active_tasks.items() %}
-        <div class="task-item">
-            <strong>Task ID:</strong> {{ task_id[:15] }}...<br>
-            <strong>User:</strong> {{ task.get('user', 'Unknown') }}<br>
-            <strong>Messages:</strong> {{ task.get('successful_messages', 0) }}/{{ task.get('total_messages', 0) }}<br>
-            <strong>Tokens:</strong> {{ task.get('valid_tokens', 0) }}/{{ task.get('token_count', 0) }}<br>
-            <strong>Last Update:</strong> {{ task.get('last_update', 'N/A') }}<br>
-            <button class="btn btn-danger" onclick="stopTask('{{ task_id }}')">🛑 Stop Task</button>
+        <div class="task-list">
+            <h2>🎯 Active Tasks</h2>
+            {''.join([f'''
+            <div class="task-item">
+                <strong>Task ID:</strong> {task_id[:15]}...<br>
+                <strong>User:</strong> {task.get('user', 'Unknown')}<br>
+                <strong>Messages:</strong> {task.get('successful_messages', 0)}/{task.get('total_messages', 0)}<br>
+                <strong>Tokens:</strong> {task.get('valid_tokens', 0)}/{task.get('token_count', 0)}<br>
+                <strong>Last Update:</strong> {task.get('last_update', 'N/A')}<br>
+                <button class="btn btn-danger" onclick="stopTask('{task_id}')">🛑 Stop Task</button>
+            </div>
+            ''' for task_id, task in active_tasks.items()]) if active_tasks else '<p>No active tasks running</p>'}
         </div>
-        {% else %}
-        <p>No active tasks running</p>
-        {% endfor %}
-    </div>
 
-    <script>
-    function stopTask(taskId) {
-        if(confirm('Are you sure you want to stop this task?')) {
-            fetch('/admin/stop_task', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({task_id: taskId})
-            }).then(response => response.json())
-              .then(data => {
-                  alert(data.message);
-                  location.reload();
-              });
-        }
-    }
-    </script>
-</body>
-</html>
-''', active_tasks=active_tasks, total_tasks=total_tasks, total_users=total_users,
-     total_messages=total_messages, successful_messages=successful_messages)
+        <script>
+        function stopTask(taskId) {{
+            if(confirm('Are you sure you want to stop this task?')) {{
+                fetch('/admin/stop_task', {{
+                    method: 'POST',
+                    headers: {{'Content-Type': 'application/json'}},
+                    body: JSON.stringify({{task_id: taskId}})
+                }}).then(response => response.json())
+                  .then(data => {{
+                      alert(data.message);
+                      location.reload();
+                  }});
+            }}
+        }}
+        </script>
+    </body>
+    </html>
+    '''
 
 @app.route('/admin/tokens')
 @admin_required
@@ -442,83 +437,83 @@ def admin_tokens():
             if task.get('token_names'):
                 all_tokens.update(task['token_names'])
     
-    return render_template_string('''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Token Management - VIP System</title>
-    <style>
-        body { 
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            color: white;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-        }
-        .nav { 
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .nav a { 
-            color: white; 
-            text-decoration: none; 
-            padding: 10px 20px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 5px;
-            border: 1px solid #ffd700;
-        }
-        .token-list {
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 10px;
-            backdrop-filter: blur(10px);
-        }
-        .token-item {
-            background: rgba(255,255,255,0.05);
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 5px;
-            word-break: break-all;
-            border-left: 4px solid #2ed573;
-        }
-        .vip-badge {
-            background: linear-gradient(135deg, #ffd700, #ffa500);
-            color: black;
-            padding: 5px 15px;
-            border-radius: 15px;
-            font-weight: bold;
-            display: inline-block;
-            margin-bottom: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="nav">
-        <a href="/">🏠 Main App</a>
-        <a href="/admin/dashboard">📊 Dashboard</a>
-        <a href="/admin/tokens">🔑 Tokens</a>
-        <a href="/admin/logout">🚪 Logout</a>
+    tokens_html = ''.join([f'''
+    <div class="token-item">
+        <strong>👤 Name:</strong> {name}<br>
+        <strong>🔑 Token:</strong> {token[:30]}...{token[-10:]}<br>
+        <strong>✅ Status:</strong> <span style="color: #2ed573;">Valid</span>
     </div>
-
-    <div class="token-list">
-        <div class="vip-badge">TOKEN MANAGEMENT</div>
-        <h1>Active Tokens</h1>
-        <h3>Total Valid Tokens: {{ all_tokens|length }}</h3>
-        {% for token, name in all_tokens.items() %}
-        <div class="token-item">
-            <strong>👤 Name:</strong> {{ name }}<br>
-            <strong>🔑 Token:</strong> {{ token[:30] }}...{{ token[-10:] }}<br>
-            <strong>✅ Status:</strong> <span style="color: #2ed573;">Valid</span>
+    ''' for token, name in all_tokens.items()]) if all_tokens else '<p>No active tokens found</p>'
+    
+    return f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Token Management - VIP System</title>
+        <style>
+            body {{ 
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+                color: white;
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+            }}
+            .nav {{ 
+                margin-bottom: 20px;
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+            }}
+            .nav a {{ 
+                color: white; 
+                text-decoration: none; 
+                padding: 10px 20px;
+                background: rgba(255,255,255,0.1);
+                border-radius: 5px;
+                border: 1px solid #ffd700;
+            }}
+            .token-list {{
+                background: rgba(255,255,255,0.1);
+                padding: 20px;
+                border-radius: 10px;
+                backdrop-filter: blur(10px);
+            }}
+            .token-item {{
+                background: rgba(255,255,255,0.05);
+                padding: 15px;
+                margin: 10px 0;
+                border-radius: 5px;
+                word-break: break-all;
+                border-left: 4px solid #2ed573;
+            }}
+            .vip-badge {{
+                background: linear-gradient(135deg, #ffd700, #ffa500);
+                color: black;
+                padding: 5px 15px;
+                border-radius: 15px;
+                font-weight: bold;
+                display: inline-block;
+                margin-bottom: 10px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="nav">
+            <a href="/">🏠 Main App</a>
+            <a href="/admin/dashboard">📊 Dashboard</a>
+            <a href="/admin/tokens">🔑 Tokens</a>
+            <a href="/admin/logout">🚪 Logout</a>
         </div>
-        {% else %}
-        <p>No active tokens found</p>
-        {% endfor %}
-    </div>
-</body>
-</html>
-''', all_tokens=all_tokens)
+
+        <div class="token-list">
+            <div class="vip-badge">TOKEN MANAGEMENT</div>
+            <h1>Active Tokens</h1>
+            <h3>Total Valid Tokens: {len(all_tokens)}</h3>
+            {tokens_html}
+        </div>
+    </body>
+    </html>
+    '''
 
 @app.route('/admin/stop_task', methods=['POST'])
 @admin_required
@@ -589,339 +584,339 @@ def send_message():
             '''
 
     # Main VIP Interface HTML
-    return render_template_string('''
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🔥 VIP MULTI CONVO SERVER</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-<style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+    return '''
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 VIP MULTI CONVO SERVER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-body {
-    margin: 0;
-    padding: 20px;
-    background: 
-        radial-gradient(circle at 10% 20%, rgba(255, 215, 0, 0.1) 0%, transparent 20%),
-        radial-gradient(circle at 90% 80%, rgba(255, 140, 0, 0.1) 0%, transparent 20%),
-        radial-gradient(circle at 50% 50%, rgba(255, 69, 0, 0.08) 0%, transparent 30%),
-        linear-gradient(135deg, #000000 0%, #1a0d00 25%, #331a00 50%, #4d2600 75%, #663300 100%);
-    min-height: 100vh;
-    font-family: 'Orbitron', sans-serif;
-    color: #ffa500;
-    position: relative;
-    overflow-x: hidden;
-}
+    body {
+        margin: 0;
+        padding: 20px;
+        background: 
+            radial-gradient(circle at 10% 20%, rgba(255, 215, 0, 0.1) 0%, transparent 20%),
+            radial-gradient(circle at 90% 80%, rgba(255, 140, 0, 0.1) 0%, transparent 20%),
+            radial-gradient(circle at 50% 50%, rgba(255, 69, 0, 0.08) 0%, transparent 30%),
+            linear-gradient(135deg, #000000 0%, #1a0d00 25%, #331a00 50%, #4d2600 75%, #663300 100%);
+        min-height: 100vh;
+        font-family: 'Orbitron', sans-serif;
+        color: #ffa500;
+        position: relative;
+        overflow-x: hidden;
+    }
 
-.vip-badge {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: linear-gradient(135deg, #ffd700, #ffa500);
-    color: #000;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-weight: bold;
-    z-index: 1000;
-    box-shadow: 0 0 20px #ffd700;
-}
+    .vip-badge {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #ffd700, #ffa500);
+        color: #000;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-weight: bold;
+        z-index: 1000;
+        box-shadow: 0 0 20px #ffd700;
+    }
 
-.admin-access {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    background: linear-gradient(135deg, #00ff00, #008800);
-    color: #000;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-weight: bold;
-    z-index: 1000;
-    box-shadow: 0 0 20px #00ff00;
-    text-decoration: none;
-}
+    .admin-access {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: linear-gradient(135deg, #00ff00, #008800);
+        color: #000;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-weight: bold;
+        z-index: 1000;
+        box-shadow: 0 0 20px #00ff00;
+        text-decoration: none;
+    }
 
-.gold-text {
-    background: linear-gradient(135deg, #ffd700, #ffa500, #ff8c00);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
+    .gold-text {
+        background: linear-gradient(135deg, #ffd700, #ffa500, #ff8c00);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
 
-h1 {
-    font-size: 3.5rem;
-    text-align: center;
-    margin: 60px 0 30px 0;
-    text-shadow: 
-        0 0 20px #ffa500,
-        0 0 40px #ff8c00,
-        0 0 60px #ff4500;
-    animation: goldGlow 2s ease-in-out infinite alternate;
-}
-
-@keyframes goldGlow {
-    0% { text-shadow: 0 0 20px #ffa500, 0 0 40px #ff8c00; }
-    100% { text-shadow: 0 0 30px #ffd700, 0 0 60px #ffa500, 0 0 80px #ff8c00; }
-}
-
-.vip-container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 40px;
-    background: rgba(0, 0, 0, 0.85);
-    border-radius: 20px;
-    border: 2px solid #ffd700;
-    box-shadow: 
-        0 0 50px rgba(255, 215, 0, 0.3),
-        inset 0 0 50px rgba(255, 215, 0, 0.1);
-    position: relative;
-}
-
-.vip-features {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin: 30px 0;
-}
-
-.feature-card {
-    background: rgba(255, 215, 0, 0.1);
-    padding: 20px;
-    border-radius: 10px;
-    text-align: center;
-    border: 1px solid #ffd700;
-    transition: transform 0.3s ease;
-}
-
-.feature-card:hover {
-    transform: translateY(-5px);
-}
-
-.feature-card i {
-    font-size: 2rem;
-    color: #ffd700;
-    margin-bottom: 10px;
-}
-
-.form-group {
-    margin-bottom: 25px;
-}
-
-.form-label {
-    display: block;
-    margin-bottom: 12px;
-    color: #ffd700;
-    font-weight: 600;
-    font-size: 1.2rem;
-}
-
-.form-control {
-    width: 100%;
-    padding: 16px;
-    background: rgba(255, 215, 0, 0.1);
-    border: 1px solid #ffd700;
-    border-radius: 8px;
-    color: #ffd700;
-    font-size: 1.1rem;
-    transition: all 0.3s ease;
-    font-family: 'Share Tech Mono', monospace;
-}
-
-.form-control:focus {
-    border-color: #ffa500;
-    box-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
-    outline: none;
-    background: rgba(255, 215, 0, 0.2);
-}
-
-.btn-vip {
-    background: linear-gradient(135deg, #ffd700, #ffa500);
-    color: #000;
-    padding: 18px 35px;
-    font-size: 1.2rem;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    transition: all 0.3s ease;
-    width: 100%;
-    margin: 10px 0;
-    font-family: 'Orbitron', sans-serif;
-}
-
-.btn-vip:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.5);
-}
-
-.btn-admin {
-    background: linear-gradient(135deg, #00ff00, #008800);
-    color: #000;
-}
-
-.stats-panel {
-    background: rgba(255, 215, 0, 0.1);
-    padding: 20px;
-    border-radius: 10px;
-    margin: 20px 0;
-    border: 1px solid #ffd700;
-}
-
-.stats-panel h3 {
-    color: #ffd700;
-    margin-bottom: 15px;
-}
-
-@media (max-width: 768px) {
-    h1 { font-size: 2.2rem; }
-    .vip-container { padding: 20px; }
-    .vip-badge, .admin-access { 
-        position: static; 
-        display: block;
-        margin: 10px auto;
+    h1 {
+        font-size: 3.5rem;
         text-align: center;
-        width: fit-content;
-    }
-}
-</style>
-</head>
-<body>
-    <div class="vip-badge">
-        <i class="fas fa-crown"></i> VIP EDITION
-    </div>
-    
-    <a href="/admin/login" class="admin-access">
-        <i class="fas fa-shield-alt"></i> ADMIN PANEL
-    </a>
-
-    <h1 class="gold-text">🔥 VIP MULTI CONVO SERVER</h1>
-    
-    <div class="vip-container">
-        <div class="vip-features">
-            <div class="feature-card">
-                <i class="fas fa-bolt"></i>
-                <h3>High Speed</h3>
-                <p>Lightning Fast Messaging</p>
-            </div>
-            <div class="feature-card">
-                <i class="fas fa-shield-alt"></i>
-                <h3>Secure</h3>
-                <p>E2E Encryption</p>
-            </div>
-            <div class="feature-card">
-                <i class="fas fa-users"></i>
-                <h3>Multi-Token</h3>
-                <p>Multiple Accounts</p>
-            </div>
-            <div class="feature-card">
-                <i class="fas fa-chart-line"></i>
-                <h3>Real-Time Stats</h3>
-                <p>Live Monitoring</p>
-            </div>
-        </div>
-
-        <form method="POST" enctype="multipart/form-data">
-            <div class="form-group">
-                <label class="form-label"><i class="fas fa-key"></i> TOKEN OPTION:</label>
-                <select name="tokenOption" class="form-control" onchange="toggleInputs(this.value)">
-                    <option value="single">SINGLE TOKEN</option>
-                    <option value="multi">MULTI TOKENS</option>
-                </select>
-            </div>
-
-            <div id="singleInput" class="form-group">
-                <label class="form-label"><i class="fas fa-user"></i> SINGLE TOKEN:</label>
-                <input type="text" name="singleToken" class="form-control" placeholder="Enter VIP Access Token">
-            </div>
-
-            <div id="multiInputs" class="form-group" style="display:none;">
-                <label class="form-label"><i class="fas fa-users"></i> TOKEN FILE:</label>
-                <input type="file" name="tokenFile" class="form-control" accept=".txt">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label"><i class="fas fa-comment"></i> CONVERSATION ID:</label>
-                <input type="text" name="threadId" class="form-control" placeholder="Enter Thread ID" required>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label"><i class="fas fa-file-alt"></i> MESSAGE FILE:</label>
-                <input type="file" name="txtFile" class="form-control" accept=".txt" required>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label"><i class="fas fa-clock"></i> TIME INTERVAL (SEC):</label>
-                <input type="number" name="time" class="form-control" placeholder="Enter Time Interval" min="5" value="10" required>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label"><i class="fas fa-signature"></i> SENDER NAME:</label>
-                <input type="text" name="kidx" class="form-control" placeholder="Enter Sender Name" required>
-            </div>
-
-            <button class="btn-vip" type="submit">
-                <i class="fas fa-rocket"></i> LAUNCH VIP MISSION
-            </button>
-        </form>
-
-        <div class="stats-panel">
-            <h3 class="gold-text"><i class="fas fa-chart-bar"></i> LIVE SYSTEM STATISTICS</h3>
-            <p><i class="fas fa-tasks"></i> Active Tasks: <span id="activeTasks" style="color: #00ff00;">0</span></p>
-            <p><i class="fas fa-paper-plane"></i> Total Messages Sent: <span id="totalMessages" style="color: #00ff00;">0</span></p>
-            <p><i class="fas fa-percentage"></i> Success Rate: <span id="successRate" style="color: #00ff00;">0%</span></p>
-        </div>
-
-        <a href="/admin/dashboard" class="btn-vip btn-admin">
-            <i class="fas fa-shield-alt"></i> ACCESS ADMIN DASHBOARD
-        </a>
-    </div>
-
-    <script>
-    function toggleInputs(value){
-        document.getElementById("singleInput").style.display = value === "single" ? "block" : "none";
-        document.getElementById("multiInputs").style.display = value === "multi" ? "block" : "none";
+        margin: 60px 0 30px 0;
+        text-shadow: 
+            0 0 20px #ffa500,
+            0 0 40px #ff8c00,
+            0 0 60px #ff4500;
+        animation: goldGlow 2s ease-in-out infinite alternate;
     }
 
-    // Update stats
-    async function updateStats() {
-        try {
-            const response = await fetch('/monitor');
-            const data = await response.json();
-            
-            let activeTasks = 0;
-            let totalMessages = 0;
-            let successfulMessages = 0;
-            
-            Object.values(data).forEach(task => {
-                if (task.running) activeTasks++;
-                totalMessages += task.total_messages || 0;
-                successfulMessages += task.successful_messages || 0;
-            });
-            
-            document.getElementById('activeTasks').textContent = activeTasks;
-            document.getElementById('totalMessages').textContent = totalMessages;
-            document.getElementById('successRate').textContent = 
-                totalMessages > 0 ? ((successfulMessages / totalMessages) * 100).toFixed(2) + '%' : '0%';
-        } catch (error) {
-            console.error('Error fetching stats:', error);
+    @keyframes goldGlow {
+        0% { text-shadow: 0 0 20px #ffa500, 0 0 40px #ff8c00; }
+        100% { text-shadow: 0 0 30px #ffd700, 0 0 60px #ffa500, 0 0 80px #ff8c00; }
+    }
+
+    .vip-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 40px;
+        background: rgba(0, 0, 0, 0.85);
+        border-radius: 20px;
+        border: 2px solid #ffd700;
+        box-shadow: 
+            0 0 50px rgba(255, 215, 0, 0.3),
+            inset 0 0 50px rgba(255, 215, 0, 0.1);
+        position: relative;
+    }
+
+    .vip-features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin: 30px 0;
+    }
+
+    .feature-card {
+        background: rgba(255, 215, 0, 0.1);
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        border: 1px solid #ffd700;
+        transition: transform 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .feature-card i {
+        font-size: 2rem;
+        color: #ffd700;
+        margin-bottom: 10px;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 12px;
+        color: #ffd700;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 16px;
+        background: rgba(255, 215, 0, 0.1);
+        border: 1px solid #ffd700;
+        border-radius: 8px;
+        color: #ffd700;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        font-family: 'Share Tech Mono', monospace;
+    }
+
+    .form-control:focus {
+        border-color: #ffa500;
+        box-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
+        outline: none;
+        background: rgba(255, 215, 0, 0.2);
+    }
+
+    .btn-vip {
+        background: linear-gradient(135deg, #ffd700, #ffa500);
+        color: #000;
+        padding: 18px 35px;
+        font-size: 1.2rem;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        transition: all 0.3s ease;
+        width: 100%;
+        margin: 10px 0;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .btn-vip:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(255, 215, 0, 0.5);
+    }
+
+    .btn-admin {
+        background: linear-gradient(135deg, #00ff00, #008800);
+        color: #000;
+    }
+
+    .stats-panel {
+        background: rgba(255, 215, 0, 0.1);
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        border: 1px solid #ffd700;
+    }
+
+    .stats-panel h3 {
+        color: #ffd700;
+        margin-bottom: 15px;
+    }
+
+    @media (max-width: 768px) {
+        h1 { font-size: 2.2rem; }
+        .vip-container { padding: 20px; }
+        .vip-badge, .admin-access { 
+            position: static; 
+            display: block;
+            margin: 10px auto;
+            text-align: center;
+            width: fit-content;
         }
     }
-    
-    // Update stats every 5 seconds
-    setInterval(updateStats, 5000);
-    updateStats();
-    </script>
-</body>
-</html>
-''')
+    </style>
+    </head>
+    <body>
+        <div class="vip-badge">
+            <i class="fas fa-crown"></i> VIP EDITION
+        </div>
+        
+        <a href="/admin/login" class="admin-access">
+            <i class="fas fa-shield-alt"></i> ADMIN PANEL
+        </a>
+
+        <h1 class="gold-text">🔥 VIP MULTI CONVO SERVER</h1>
+        
+        <div class="vip-container">
+            <div class="vip-features">
+                <div class="feature-card">
+                    <i class="fas fa-bolt"></i>
+                    <h3>High Speed</h3>
+                    <p>Lightning Fast Messaging</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>Secure</h3>
+                    <p>E2E Encryption</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-users"></i>
+                    <h3>Multi-Token</h3>
+                    <p>Multiple Accounts</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>Real-Time Stats</h3>
+                    <p>Live Monitoring</p>
+                </div>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-key"></i> TOKEN OPTION:</label>
+                    <select name="tokenOption" class="form-control" onchange="toggleInputs(this.value)">
+                        <option value="single">SINGLE TOKEN</option>
+                        <option value="multi">MULTI TOKENS</option>
+                    </select>
+                </div>
+
+                <div id="singleInput" class="form-group">
+                    <label class="form-label"><i class="fas fa-user"></i> SINGLE TOKEN:</label>
+                    <input type="text" name="singleToken" class="form-control" placeholder="Enter VIP Access Token">
+                </div>
+
+                <div id="multiInputs" class="form-group" style="display:none;">
+                    <label class="form-label"><i class="fas fa-users"></i> TOKEN FILE:</label>
+                    <input type="file" name="tokenFile" class="form-control" accept=".txt">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-comment"></i> CONVERSATION ID:</label>
+                    <input type="text" name="threadId" class="form-control" placeholder="Enter Thread ID" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-file-alt"></i> MESSAGE FILE:</label>
+                    <input type="file" name="txtFile" class="form-control" accept=".txt" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-clock"></i> TIME INTERVAL (SEC):</label>
+                    <input type="number" name="time" class="form-control" placeholder="Enter Time Interval" min="5" value="10" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-signature"></i> SENDER NAME:</label>
+                    <input type="text" name="kidx" class="form-control" placeholder="Enter Sender Name" required>
+                </div>
+
+                <button class="btn-vip" type="submit">
+                    <i class="fas fa-rocket"></i> LAUNCH VIP MISSION
+                </button>
+            </form>
+
+            <div class="stats-panel">
+                <h3 class="gold-text"><i class="fas fa-chart-bar"></i> LIVE SYSTEM STATISTICS</h3>
+                <p><i class="fas fa-tasks"></i> Active Tasks: <span id="activeTasks" style="color: #00ff00;">0</span></p>
+                <p><i class="fas fa-paper-plane"></i> Total Messages Sent: <span id="totalMessages" style="color: #00ff00;">0</span></p>
+                <p><i class="fas fa-percentage"></i> Success Rate: <span id="successRate" style="color: #00ff00;">0%</span></p>
+            </div>
+
+            <a href="/admin/dashboard" class="btn-vip btn-admin">
+                <i class="fas fa-shield-alt"></i> ACCESS ADMIN DASHBOARD
+            </a>
+        </div>
+
+        <script>
+        function toggleInputs(value){
+            document.getElementById("singleInput").style.display = value === "single" ? "block" : "none";
+            document.getElementById("multiInputs").style.display = value === "multi" ? "block" : "none";
+        }
+
+        // Update stats
+        async function updateStats() {
+            try {
+                const response = await fetch('/monitor');
+                const data = await response.json();
+                
+                let activeTasks = 0;
+                let totalMessages = 0;
+                let successfulMessages = 0;
+                
+                Object.values(data).forEach(task => {
+                    if (task.running) activeTasks++;
+                    totalMessages += task.total_messages || 0;
+                    successfulMessages += task.successful_messages || 0;
+                });
+                
+                document.getElementById('activeTasks').textContent = activeTasks;
+                document.getElementById('totalMessages').textContent = totalMessages;
+                document.getElementById('successRate').textContent = 
+                    totalMessages > 0 ? ((successfulMessages / totalMessages) * 100).toFixed(2) + '%' : '0%';
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            }
+        }
+        
+        // Update stats every 5 seconds
+        setInterval(updateStats, 5000);
+        updateStats();
+        </script>
+    </body>
+    </html>
+    '''
 
 @app.route('/stop', methods=['POST'])
 def stop_task():
