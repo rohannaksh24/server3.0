@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: uid-checker
+    env: python
+    plan: free
+    buildCommand: pip install poetry && poetry install --no-dev
+    startCommand: poetry run python app.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.12
